@@ -1,6 +1,5 @@
 const http = require("http");
 const storage = require("./storage").storage;
-
 const crypto = require('crypto');
 
 http.createServer(function (req, res) {
@@ -32,29 +31,23 @@ http.createServer(function (req, res) {
     });
 
     function processGetRequest(req, res) {
-        let subQuery = req.url.match("^/customer/(\\d+)?$");
-        let id = parseInt(subQuery[1]);
-
-        if (!isNaN(id)) {
-            let i = storage.getCustomerIndex(id);
-            if (i === null) {
-                console.log("customer with id " + id + " not found");
-                res.writeHead(404);
-                res.end();
-            } else {
-                let customer = storage.customers[i];
-                console.log("returning customer: " + JSON.stringify(customer));
-                console.log("customer hash: " + getHash(JSON.stringify(customer)));
-                res.writeHead(200, {'Content-Type': 'application/json'});
-                res.end(JSON.stringify(customer));
-            }
+        if (req.url.match("^/customers$")) {
+            const customersJSON = JSON.stringify(storage.customers);
+            const hash = getHash(customersJSON);
+                console.log("returning list of customers; hash: " + hash);
+                res.writeHead(200, {
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'private, no-store, max-age=200',
+                    'ETag': hash
+                });
+                res.end(customersJSON);
         } else {
             console.log("bad request");
             res.writeHead(400);
+            res.end('bad request');
         }
     }
 }).listen(8080);
-
 
 function getHash(str) {
     return crypto.createHash('md5')
