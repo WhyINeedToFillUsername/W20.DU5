@@ -1,6 +1,8 @@
 const http = require("http");
 const storage = require("./storage").storage;
 
+const crypto = require('crypto');
+
 http.createServer(function (req, res) {
     // log request object
     console.log("\nIncoming request: " + req.method + " " + req.url);
@@ -42,6 +44,7 @@ http.createServer(function (req, res) {
             } else {
                 let customer = storage.customers[i];
                 console.log("returning customer: " + JSON.stringify(customer));
+                console.log("customer hash: " + getHash(JSON.stringify(customer)));
                 res.writeHead(200, {'Content-Type': 'application/json'});
                 res.end(JSON.stringify(customer));
             }
@@ -51,3 +54,10 @@ http.createServer(function (req, res) {
         }
     }
 }).listen(8080);
+
+
+function getHash(str) {
+    return crypto.createHash('md5')
+        .update(str, 'utf-8')
+        .digest('hex');
+}
