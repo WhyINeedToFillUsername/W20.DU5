@@ -1,6 +1,5 @@
 const http = require("http");
 const storage = require("./storage").storage;
-const crypto = require('crypto');
 
 http.createServer(function (req, res) {
     // log request object
@@ -21,36 +20,37 @@ http.createServer(function (req, res) {
 
     // all data have been received
     req.on('end', function () {
-        if (req.method === "GET") {
+        if (req.method === "GET" && req.url.match("^/customers$")) {
             processGetRequest(req, res);
-        } else {
-            res.writeHead(405);
-            console.log("method not allowed");
-            res.end('bad request');
-        }
-    });
-
-    function processGetRequest(req, res) {
-        if (req.url.match("^/customers$")) {
-            const customersJSON = JSON.stringify(storage.customers);
-            const hash = getHash(customersJSON);
-                console.log("returning list of customers; hash: " + hash);
-                res.writeHead(200, {
-                    'Content-Type': 'application/json',
-                    'Cache-Control': 'private, no-store, max-age=200',
-                    'ETag': hash
-                });
-                res.end(customersJSON);
         } else {
             console.log("bad request");
             res.writeHead(400);
             res.end('bad request');
         }
+    });
+
+    function processGetRequest(req, res) {
+        const ETag = req.headers['if-none-match'];
+        const hash = storage.getCustomersHash();
+
+        if (ETag === hash) {
+            console.log("received ETag: " + ETag + ", returning 304 not modified");
+            res.writeHead(304, {
+                'Cache-Control': 'private, no-store, max-age=200',
+                'Last-Modified': storage.getLastModified().toUTCString(),
+                'ETag': hash
+            });
+            res.end();
+        } else {
+            const customersJSON = JSON.stringify(storage.customers);
+            console.log("returning list of customers; hash: " + hash);
+            res.writeHead(200, {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'private, no-store, max-age=200',
+                'Last-Modified': storage.getLastModified().toUTCString(),
+                'ETag': hash
+            });
+            res.end(customersJSON);
+        }
     }
 }).listen(8080);
-
-function getHash(str) {
-    return crypto.createHash('md5')
-        .update(str, 'utf-8')
-        .digest('hex');
-}
