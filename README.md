@@ -23,6 +23,8 @@ GET /customers
         "orders": []
     }
 ]
+
+
 Implement HTTP caching using Last-Modified and ETag. Implement two version of ETag: strong and weak ETag. For weak ETag use only the id and the name from each costumer. Do not forget to show examples of communication including all HTTP Headers.
 
 Use http://nodejs.org and http module.
