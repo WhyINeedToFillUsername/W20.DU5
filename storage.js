@@ -16,13 +16,22 @@ exports.storage = {
         return null;
     },
 
-    customersHash: null,
+    customersStrongEtag: null,
 
-    getCustomersHash: function () {
-        if (!this.customersHash) {
-            this.customersHash = getHash(this.customers);
+    getCustomersStrongEtag: function () {
+        if (!this.customersStrongEtag) {
+            this.customersStrongEtag = "\"" + getHash(JSON.stringify(this.customers)) + "\"";
         }
-        return this.customersHash;
+        return this.customersStrongEtag;
+    },
+
+    customersWeakEtag: null,
+
+    getCustomersWeakEtag: function () {
+        if (!this.customersWeakEtag) {
+            this.customersWeakEtag = "W/\"" + computeWeakETag(this.customers) + "\"";
+        }
+        return this.customersWeakEtag;
     },
 
     lastModified: null,
@@ -35,8 +44,15 @@ exports.storage = {
     }
 };
 
-function getHash(obj) {
+function getHash(str) {
     return crypto.createHash('md5')
-        .update(JSON.stringify(obj), 'utf-8')
+        .update(str, 'utf-8')
         .digest('hex');
+}
+
+function computeWeakETag(customers) {
+    let content = "";
+    for (let i = 0; i < customers.length; i++)
+        content += customers[i].id + customers[i].name;
+    return getHash(content);
 }

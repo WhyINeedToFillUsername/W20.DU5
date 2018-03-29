@@ -30,25 +30,25 @@ http.createServer(function (req, res) {
     });
 
     function processGetRequest(req, res) {
-        const ETag = req.headers['if-none-match'];
-        const hash = storage.getCustomersHash();
+        const receivedETag = req.headers['if-none-match'];
+        const localETag = storage.getCustomersStrongEtag();
 
-        if (ETag === hash) {
-            console.log("received ETag: " + ETag + ", returning 304 not modified");
+        if (receivedETag === localETag) {
+            console.log("received strong ETag: " + receivedETag + ", returning 304 not modified");
             res.writeHead(304, {
                 'Cache-Control': 'private, no-store, max-age=200',
                 'Last-Modified': storage.getLastModified().toUTCString(),
-                'ETag': hash
+                'ETag': localETag
             });
             res.end();
         } else {
             const customersJSON = JSON.stringify(storage.customers);
-            console.log("returning list of customers; hash: " + hash);
+            console.log("returning list of customers; localETag: " + localETag);
             res.writeHead(200, {
                 'Content-Type': 'application/json',
                 'Cache-Control': 'private, no-store, max-age=200',
                 'Last-Modified': storage.getLastModified().toUTCString(),
-                'ETag': hash
+                'ETag': localETag
             });
             res.end(customersJSON);
         }
